@@ -15,9 +15,9 @@ Every table and figure in the paper can be regenerated from the three R scripts 
 | `BRCM_simulation.R` | The estimator, the 18 simulation comparators, the factorial Monte Carlo study (216 scenarios), the screening analysis and the sensitivity analysis | Tables 4 to 14; Figures 1, 2, 4, 5, 6; Supplementary Tables S1 to S24, S30, S31 |
 | `BRCM_realdata.R` | The benchmark study on five public datasets with 19 methods, including the explainable boosting machine (EBM) | Tables 3, 15 to 20; Figures 7 to 9; Supplementary Tables S25 to S29 and Figure S1 |
 | `KOSUM_HIGHDIM.R` | A stand-alone driver that runs only the dedicated high-dimensional screening analysis and checks its output (*kosum* is Turkish for "run") | Table 8, Figure 3 |
-| `BRCMsim/` | Output of the reported simulation run | see Section 6.1 |
-| `highdim/` | Output of the reported screening run | see Section 6.2 |
-| `BRCMreal/` | Output of the reported benchmark run | see Section 6.3 |
+| `BRCMsim/` | Output of the reported simulation run; written when the scripts are run; not included in this repository | see Section 6.1 |
+| `highdim/` | Output of the reported screening run; written when the scripts are run; not included in this repository | see Section 6.2 |
+| `BRCMreal/` | Output of the reported benchmark run; written when the scripts are run; not included in this repository | see Section 6.3 |
 
 The implementation of B-RCM++ is identical in `BRCM_simulation.R` and `BRCM_realdata.R`; each script is self-contained so that either can be run on its own.
 
@@ -165,7 +165,7 @@ Cost in the factorial study is dominated by the p = 20 scenarios: with 12 worker
 For runs of this length, disable sleep mode and keep the output folder on a local disk rather than a cloud-synchronized one. One of the runs behind this repository was interrupted while its output folder was on a synchronized drive, and was resumed from its checkpoints.
 
 ## 6. Output files and where they appear in the paper
-
+The output files are not included in this repository; the table below records which file each table and figure of the paper comes from, once the scripts have been run.
 The file names inside the output folders predate the final numbering of the paper, which is why, for example, Figure 4 of the paper is the file `F3_HL_forest_AUC.png`.
 
 Axis labels follow the typographic convention of the journal: negative numbers are set with a minus sign (U+2212) rather than a hyphen, through the helper `axis_minus()` defined in both scripts. The figures published with the paper are exactly the files written by `write_figures()` and `write_figures_rd()`; no separate figure script is used.
@@ -242,9 +242,7 @@ round(tab[order(-tab$AUC), ], 4)
 
 ## 7. Large files
 
-`01_factorial.rds` (435 MB) holds the replication-level results of the factorial study for all 18 methods and exceeds GitHub's file-size limit. It will be deposited at Zenodo and linked from this page; until then it is available from the author on request. Every table in `BRCMsim/tables/` is derived from it and is included here directly.
-
-The per-scenario checkpoint files in `BRCMsim/_checkpoints/` are not included; they duplicate `01_factorial.rds`.
+The replication-level results are not distributed with this repository: `01_factorial.rds` is 435 MB and exceeds GitHub's file-size limit. Running `BRCM_simulation.R` reproduces it, and the file is available from the author on request.
 
 ## 8. Known issues
 
