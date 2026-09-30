@@ -1,243 +1,300 @@
-B-RCM++: A Rank-Based Bernstein Additive Logistic Model with Spearman-Informed Regularization
-Replication code for the manuscript
-> Baydili, K.N. \*A Rank-Based Bernstein Additive Logistic Model with Spearman-Informed Regularization for Interpretable Binary Classification.\* Manuscript submitted for publication, 2026.
-This repository accompanies a manuscript that is currently under peer review. Full bibliographic details will be added here once the article is published.
+# B-RCM++: A Rank-Based Bernstein Additive Logistic Model with Spearman-Informed Regularization for Interpretable Binary Classification
+
+Code and output files accompanying
+
+> Baydili, K.N. A Rank-Based Bernstein Additive Logistic Model with Spearman-Informed Regularization for Interpretable Binary Classification. Submitted to *Mathematics* (MDPI).
+
+Every table and figure in the paper can be regenerated from the three R scripts in this repository, and each one is traced below to the output file behind it.
 
 ---
-Overview
-B-RCM++ is a single penalized logistic model designed so that the object that is interpreted and the object that predicts are the same object. Each predictor enters through a smooth Bernstein expansion of its mid-rank empirical distribution; the ridge penalty on each predictor block is weighted by that predictor's absolute Spearman correlation with the outcome; and a small number of pure pairwise interaction surfaces are admitted only when out-of-fold evidence supports them.
-Two identifiability constraints make the fitted object exactly decomposable:
-every main-effect block is centred to sum to zero on the training sample, and
-every interaction surface is orthogonalized against the intercept and the main-effect blocks of its own two predictors.
-As a consequence, reconstructing the linear predictor from the displayed components returns the model's own predicted probabilities. This is not asserted but verified: each script contains an executable self-test (see the Self-test section below) that checks this to numerical tolerance.
-This repository contains the two self-contained R scripts that produce every number, table and figure reported in the manuscript.
----
-Repository contents
-File	Description
-`SUP-BRCM\_simulation.R`	Monte Carlo simulation study: 7 data-generating processes x 3 sample sizes x 3 prevalences = 63 scenarios, 1000 replications each, 18 methods.
-`SUP-BRCM\_realdata.R`	Benchmark study on five public datasets under 10 repeats of stratified 5-fold cross-validation, same 18 methods.
-`README.md`	This file.
-`LICENSE`	MIT licence.
-`sessionInfo.txt`	Environment record: R and package versions used for the reported results.
-Each script is standalone: it defines the estimator, all comparator methods, the evaluation protocol, the tables and the figures, and requires no other file in this repository.
----
-Requirements
-R version. 4.5.1
-Required packages (both scripts fail immediately if any is missing under the default strict mode):
-Package	Used for
-`mgcv`	generalized additive model comparator
-`rpart`	classification tree comparator
-`randomForest`	random forest comparator
-`e1071`	support vector machine comparator
-`xgboost`	XGBoost comparator
-`lightgbm`	LightGBM comparator
-`catboost`	CatBoost comparator
-`mlbench`	benchmark datasets (`SUP-BRCM\_realdata.R` only)
-Optional packages: `foreach`, `doParallel` (parallel execution), `openxlsx` (writes the combined `.xlsx` workbook; the individual `.csv` files are written regardless).
-`parallel`, `stats` and `utils` are part of base R and need no installation. The estimator itself uses no external package: the rank transformation, Bernstein basis, penalized IRLS and interaction search are implemented in base R only.
-Installing
-```r
-install.packages(c("mgcv", "rpart", "randomForest", "e1071",
-                   "xgboost", "lightgbm", "mlbench",
-                   "foreach", "doParallel", "openxlsx"))
-```
-`catboost` is not on CRAN. Its R package is distributed as a platform-specific binary from the project's GitHub releases page, so it must be installed separately from the command above.
-Step 1. Open https://github.com/catboost/catboost/releases and find the release you want. Under that release's Assets list, locate the R binary for your system. The file names follow this pattern:
-```
-catboost-R-windows-x86\_64-{VERSION}.tgz     Windows
-catboost-R-linux-x86\_64-{VERSION}.tgz       Linux
-catboost-R-darwin-universal2-{VERSION}.tgz  macOS (Intel and Apple silicon)
-```
-Step 2. Install it, substituting the file name you found:
-```r
-install.packages("remotes")
 
-remotes::install\_url(
-  "https://github.com/catboost/catboost/releases/download/v1.2.7/catboost-R-windows-x86\_64-1.2.7.tgz",
-  INSTALL\_opts = c("--no-multiarch", "--no-test-load"))
-```
-The example above installs version 1.2.7 for Windows; change the version number and the file name to match your platform and the release you chose. Note that the version appears twice in the URL: once after `download/v` and once inside the file name.
-Step 3. Confirm the installation and note the version:
+## 1. Contents
+
+| File | Purpose | Produces |
+|---|---|---|
+| `BRCM_simulation.R` | The estimator, the 18 simulation comparators, the factorial Monte Carlo study (216 scenarios), the screening analysis and the sensitivity analysis | Tables 4 to 14; Figures 1, 2, 4, 5, 6; Supplementary Tables S1 to S24, S30, S31 |
+| `BRCM_realdata.R` | The benchmark study on five public datasets with 19 methods, including the explainable boosting machine (EBM) | Tables 3, 15 to 20; Figures 7 to 9; Supplementary Tables S25 to S29 and Figure S1 |
+| `KOSUM_HIGHDIM.R` | A stand-alone driver that runs only the dedicated high-dimensional screening analysis and checks its output (*kosum* is Turkish for "run") | Table 8, Figure 3 |
+| `BRCMsim/` | Output of the reported simulation run | see Section 6.1 |
+| `highdim/` | Output of the reported screening run | see Section 6.2 |
+| `BRCMreal/` | Output of the reported benchmark run | see Section 6.3 |
+
+The implementation of B-RCM++ is identical in `BRCM_simulation.R` and `BRCM_realdata.R`; each script is self-contained so that either can be run on its own.
+
+## 2. Requirements
+
+The reported results were produced with **R 4.4.2** on **Windows 11 x64**.
+
+R packages, with the versions used:
+
+| Package | Version | Used for |
+|---|---|---|
+| mgcv | 1.9-1 | generalized additive model |
+| rpart | 4.1.24 | decision tree |
+| randomForest | 4.7-1.2 | random forest |
+| e1071 | 1.7-16 | support vector machine |
+| xgboost | 1.7.11.1 | XGBoost |
+| lightgbm | 4.6.0 | LightGBM |
+| catboost | 1.2.8 | CatBoost |
+| mlbench | 2.1-9 | the five benchmark datasets |
+| reticulate | 1.47.0 | bridge to Python, for EBM |
+| openxlsx | 4.2.8.1 | Excel copies of the output tables |
+
 ```r
-packageVersion("catboost")
+install.packages(c("mgcv", "rpart", "randomForest", "e1071", "xgboost",
+                   "lightgbm", "mlbench", "reticulate", "openxlsx", "remotes"))
 ```
-Any recent release works: the scripts call only `catboost.load\_pool`, `catboost.train` and `catboost.predict`, and impose no version requirement. The exact version used for the reported results is recorded in `sessionInfo.txt`.
-If the installation stops with an error about hard-coded temporary paths, add `"--no-staged-install"` to `INSTALL\_opts`.
----
-Reproducing the reported results
-Both scripts run end to end from a single entry point and write their outputs to a directory created in the current working directory.
-```bash
-Rscript SUP-BRCM\_simulation.R
-Rscript SUP-BRCM\_realdata.R
-```
-Equivalently, from an interactive R session:
+
+`catboost` is not distributed through CRAN. On Windows it can be installed from the binary release:
+
 ```r
-source("SUP-BRCM\_simulation.R")   # runs automatically and returns `sim`
-source("SUP-BRCM\_realdata.R")     # runs automatically and returns `res`
+remotes::install_url(
+  "https://github.com/catboost/catboost/releases/download/v1.2.8/catboost-R-windows-x86_64-1.2.8.tgz",
+  INSTALL_opts = c("--no-multiarch", "--no-test-load"))
 ```
-Each script ends with `if (AUTORUN \&\& sys.nframe() == 0L) ...`, so sourcing it from the top level launches the full run, while sourcing it from inside another function does not.
-Seeds. All randomness is seeded deterministically (`BASE\_SEED` = 1000 for the simulation, 2000 for the benchmark study), and fold assignment is deterministic and class-stratified. Re-running either script on the same machine with the same package versions reproduces the reported values exactly.
-Quick smoke test (a few minutes)
-```bash
-BRCM\_NSIM=5 BRCM\_OUT=smoke\_test Rscript SUP-BRCM\_simulation.R
-```
-This runs the entire pipeline with 5 replications per scenario instead of 1000. It produces the same file structure with unstable numbers, and confirms that all packages, the parallel backend and the output paths are working.
----
-Configuration
-Both scripts read their settings from environment variables, so no line of code needs to be edited to change a run.
-Variable	Default (simulation)	Default (benchmark)	Meaning
-`BRCM\_NSIM`	`1000`	—	replications per scenario
-`BRCM\_REPEATS`	—	`10`	repeats of cross-validation
-`BRCM\_FOLDS`	—	`5`	outer folds per repeat
-`BRCM\_OOFK`	`3`	`3`	inner folds for penalty selection and interaction scoring
-`BRCM\_SEED`	`1000`	`2000`	base seed
-`BRCM\_CORES`	all but one	all but one	parallel workers
-`BRCM\_OUT`	`BRCM\_ciktilar`	`BRCM\_realdata\_ciktilar`	output directory
-`BRCM\_R2THRESH`	`0.01`	`0.01`	out-of-fold R-squared threshold for admitting an interaction
-`BRCM\_AUTORUN`	`TRUE`	`TRUE`	run automatically when sourced at top level
-`BRCM\_STRICT`	`TRUE`	`TRUE`	require all comparator packages
-Example — a shorter run on 4 cores writing to a different directory:
-```bash
-BRCM\_NSIM=100 BRCM\_CORES=4 BRCM\_OUT=my\_run Rscript SUP-BRCM\_simulation.R
-```
-Development mode
-To load the functions without running anything (useful for inspecting the estimator or running the self-test):
+
+For other systems see https://catboost.ai/docs/en/installation/r-installation-binary-installation. The estimator itself, ordinary and ridge-penalized logistic regression, the four ablations and all evaluation code use base R only.
+
+**Python, for EBM only.** The explainable boosting machine is called from R through `reticulate`. The reported run used a conda environment named `brcm-ebm` with the `interpret` package installed from PyPI; the Python and `interpret` versions were not recorded in the session information of that run.
+
 ```r
-Sys.setenv(BRCM\_AUTORUN = "FALSE")
-source("SUP-BRCM\_simulation.R")
-brcm\_self\_test()
+reticulate::conda_create("brcm-ebm")
+reticulate::py_install("interpret", envname = "brcm-ebm", pip = TRUE)
 ```
-To run with only the base-R comparators, skipping any boosting library you have not installed:
-```bash
-BRCM\_STRICT=FALSE Rscript SUP-BRCM\_simulation.R
-```
-Note that a non-strict run does not reproduce the reported results, because the skipped methods are absent from the comparison.
----
-Self-test
-Both scripts define `brcm\_self\_test()`, which verifies eleven properties of the estimator and returns `TRUE` only if all pass:
-rank map consistency: `u\_train(x)` equals `u\_test(x, x)`
-an interaction is selected when a true interaction is present
-each pure interaction surface is orthogonal to the intercept and to the main-effect blocks of its own two predictors
-prediction equals the sum of the plotted components
-the plotted interaction surface equals the model's own contribution
-the plotted categorical bars equal the model's own contribution
-continuous components sum to zero on the training data
-the fitting procedure is deterministic and consumes no random numbers
-a single-level categorical predictor is handled without error
-an unseen test category is handled without error
-the null option is genuine: `r2\_thresh = Inf` yields zero interactions
-Properties 3 to 7 are the executable form of the identifiability and decomposability claims made in Section 2.1 of the manuscript. To run it:
+
+`BRCM_realdata.R` finds this environment by itself. If Python is installed elsewhere, point to the interpreter before sourcing the script:
+
 ```r
-Sys.setenv(BRCM\_AUTORUN = "FALSE")
-source("SUP-BRCM\_simulation.R")
-brcm\_self\_test(verbose = TRUE)
+Sys.setenv(BRCM_PYTHON = "C:/path/to/python.exe")
 ```
-Expected output: eleven `PASS` lines and `TRUE`.
----
-Outputs
-`SUP-BRCM\_simulation.R` (default directory `BRCM\_ciktilar/`)
-Main tables
-File	Content
-`T1\_overall.csv`	overall performance of all 18 methods across the 63 scenarios
-`T\_paired\_summary.csv`	paired comparison of B-RCM++ against each of the other 17 methods
-`T\_diagnostics.csv`	per-scenario convergence rates and interaction-selection counts
-`T\_interaction\_diagnostics.csv`	sensitivity to the interaction threshold and the Spearman offset
-`T\_runtime.csv`	median fitting time per evaluation, by method
-`T01\_detail\_\*.csv` … `T21\_detail\_\*.csv`	full median (IQR) results for each process x prevalence combination
-Replication-level data
-File	Content
-`DATA\_summary.csv`	scenario x method x metric summaries
-`DATA\_paired\_scenario.csv`	scenario-level paired differences with confidence intervals
-`sim.rds`	complete replication-level object (large)
-Figures
-File	Content
-`F1\_AUC\_by\_n.png`	mean AUC as a function of sample size
-`F2\_LogLoss\_by\_DGP.png`	mean log-loss by data-generating process
-`F3\_HL\_forest\_AUC.png`	scenario-level paired differences with 95% confidence intervals
-`F4\_component\_functions.png`	fitted component functions on the nonlinear process
-`F5\_interaction\_surface.png`	recovered pure interaction surface
-`Paper\_Tables.xlsx` collects the tables in a single workbook if `openxlsx` is available.
-`SUP-BRCM\_realdata.R` (default directory `BRCM\_realdata\_ciktilar/`)
-File	Content
-`RT0\_datasets.csv`	dataset dimensions, event rates and preprocessing rules
-`RT\_overall.csv`	overall performance across the five datasets
-`RT1\_\*.csv` … `RT5\_\*.csv`	per-dataset results for all 18 methods
-`RD\_summary.csv`	dataset x method x metric summaries
-`RD\_paired.csv`	repeat-level paired differences
-`RD\_diagnostics.csv`	successful fits out of ten attempts, by method and dataset
-`RF\_AUC\_by\_dataset.png`, `RF\_LogLoss\_by\_dataset.png`	performance by dataset
-`RF\_HL\_forest\_AUC.png`	paired differences against every comparator
-`RF\_pima\_components.png`, `RF\_pima\_interaction.png`	fitted components on Pima Indians Diabetes
-`realdata.rds`	complete repeat-level object
-`RealData\_Tables.xlsx`	combined workbook (requires `openxlsx`)
----
-What the scripts implement
-The estimator
-`brcm\_fit(X, y, cat\_mask, ...)` returns a fitted model; `brcm\_predict(fit, Xnew)` returns predicted probabilities. Key arguments:
-Argument	Default	Meaning
-`m`	`10`	Bernstein degree for main effects
-`m2`	`3`	Bernstein degree for interaction surfaces
-`Kmax`	`4`	maximum number of admitted interaction surfaces
-`lam\_grid`	`c(0.25, 0.5, 1, 2, 4)`	candidate global penalty values
-`lam\_int`	`1.0`	fixed ridge parameter for interaction blocks
-`r2\_thresh`	`0.01`	out-of-fold R-squared required to admit a surface
-`min\_n\_inter`	`300`	minimum training size below which the interaction search is disabled
-`c\_spear`	`0.05`	offset in the Spearman penalty weight
-`top\_feat`	`8`	screening size for interaction candidates
-Fold-local estimation
-Every quantity that depends on the data is recomputed inside each training fold and applied unchanged to the held-out part. This applies to the mid-rank empirical distribution maps, the block centring constants, the Spearman penalty weights, the additive fit, the residuals used to score candidate interactions, and the orthogonalization operator. No quantity used to construct or score a candidate interaction is estimated on the observations against which it is scored, so the reported out-of-fold R-squared is a genuine held-out quantity.
-Compared methods (18)
-B-RCM++; logistic regression; ridge-penalized logistic regression; classification tree; generalized additive model; random forest; support vector machine; XGBoost; LightGBM; CatBoost; Platt-calibrated variants of the random forest, XGBoost, LightGBM and CatBoost; and four nested ablations of the proposed model (A1-LinearRidge, A2-RankLinear, A3-RankBernstein, A4-PlusSpearman) in which consecutive models differ by exactly one component.
-Data-generating processes (7)
-`logit\_mixed`, `logit\_nl` (nonlinear), `logit\_corr` (correlated predictors), `lpm\_mixed` (linear probability), `logit\_interact`, `logit\_pure\_int` (interaction with no main effects), `null\_mixed` (no signal).
-Benchmark datasets (5)
-Pima Indians Diabetes, Breast Cancer Wisconsin, Ionosphere, Sonar and Congressional Voting Records, all obtained from the `mlbench` package. Missing-data rules and outcome encodings are applied inside the training folds only.
----
-Known behaviour worth noting
-These are documented so that a reader who re-runs the code is not surprised by them; all are discussed in the manuscript.
-The interaction search does not activate on every dataset. It requires at least `min\_n\_inter = 300` training observations and at least two continuous predictors. Under 5-fold cross-validation the training partitions of Ionosphere (280) and Sonar (166) fall below that threshold, and all predictors in Congressional Voting Records are categorical. On these three datasets B-RCM++ therefore reduces to its additive form by construction and is identical to the A4-PlusSpearman ablation. This is a structural consequence of the protocol, not evidence that those datasets lack interaction structure.
-LightGBM fails on Ionosphere. That dataset contains a predictor with a single observed level, and the design-matrix expansion used to pass the data to the boosting library applies treatment contrasts, which are undefined for a factor with fewer than two levels. The call raises an error before any tree is grown, on every repeat.
-Ordinary logistic regression fails on three datasets. Ionosphere, Sonar and Congressional Voting Records admit complete or quasi-complete separation at the fold sizes used here, so the maximum-likelihood estimate diverges.
-The generalized additive model succeeds on only 2 of 10 repeats of Ionosphere, the smoothing basis being unidentifiable on folds in which several predictors are near-collinear.
-Failure criterion. A repeat counts as successful only if the method returns finite predicted probabilities together with a finite operating threshold for every observation in the dataset, and both outcome classes are present in the resulting prediction vector. Anything else — an explicit error, a non-convergence flag or a non-finite value — is recorded as a failure. The same rule is applied identically to all 18 methods.
----
-Creating the environment record
-Before archiving, record the exact environment in which the reported results were produced:
+
+Neither `BRCM_simulation.R` nor `KOSUM_HIGHDIM.R` needs Python.
+
+## 3. Quick start
+
+Each script runs a built-in self-test of 14 checks when it is sourced, covering among other things the exact reconstruction of predictions from the plotted components, the orthogonality of the interaction surfaces and the determinism of the fitting code. A run stops if any check fails.
+
+To confirm that the environment works before committing to a long run, use a small replication count in a separate output folder:
+
 ```r
-writeLines(capture.output(sessionInfo()), "sessionInfo.txt")
+Sys.setenv(BRCM_NSIM = "10", BRCM_CORES = "4", BRCM_OUT = "BRCMtest")
+source("BRCM_simulation.R")
 ```
-Run this in the same R session used for the final runs and add the resulting file to the repository. The Data Availability Statement of the manuscript refers to it.
----
-License
-Released under the MIT License. See the `LICENSE` file for the full text.
-The benchmark datasets are redistributed by the `mlbench` package and originate from the UCI Machine Learning Repository; they are not included in this repository and remain subject to their own terms.
----
-Citation
-This archive has a permanent DOI and can be cited directly:
+
+To check the EBM installation without running the benchmark:
+
+```r
+Sys.setenv(BRCM_AUTORUN = "FALSE")
+source("BRCM_realdata.R")
+brcm_ebm_check()   # reports the interpreter found and the result of a trial fit
+```
+
+## 4. Reproducing the results
+
+Each script writes every file it produces inside a single output folder in the working directory and nothing outside it. Settings are read from environment variables, which must be set before the script is sourced; start each run from a fresh R session.
+
+### 4.1 Simulation study (Sections 3.1 to 3.6)
+
+```r
+Sys.setenv(BRCM_NSIM = "1000", BRCM_CORES = "12", BRCM_OUT = "BRCMsim")
+source("BRCM_simulation.R")
+```
+
+Sourcing the file runs `brcm_run_all()`, which performs, in order: the factorial study of 216 scenarios with 1000 replications each; the screening analysis at p = 10, 20 and 50 with 500 replications per cell; the sensitivity analysis with 200 replications per setting; and finally writes all tables and figures. A run from scratch therefore reproduces Table 8 and Figure 3 as well.
+
+### 4.2 Screening analysis only (Table 8, Figure 3)
+
+```r
+source("KOSUM_HIGHDIM.R")
+```
+
+This runs only the 18 cells of the screening analysis (p = 10, 20, 50; n = 500, 1000; three processes; 500 replications each) without touching the factorial study, and then checks the output for internal consistency: among other things, that the proportion of fits admitting at least one false surface never exceeds the mean number of false surfaces, and that under the null it equals the proportion admitting any surface. It writes `02_highdim_final.rds`, `T_highdim_screening_final.csv`, `F3_screening_by_dimension.png` and `sessionInfo_highdim_final.txt`.
+
+The reported screening results come from this script rather than from the factorial run; the reason is given in Section 9. To redraw Figure 3 from the saved table without repeating the run:
+
+```r
+Sys.setenv(BRCM_AUTORUN = "FALSE")
+source("BRCM_simulation.R")
+draw_screening_figure(read.csv("T_highdim_screening_final.csv"), "F3_screening_by_dimension.png")
+```
+
+### 4.3 Benchmark study (Section 3.7)
+
+```r
+Sys.setenv(BRCM_CORES = "10", BRCM_OUT = "BRCMreal")
+source("BRCM_realdata.R")
+```
+
+The five datasets are loaded from the `mlbench` package; no download is needed. Each dataset is evaluated by ten repeats of five-fold stratified cross-validation. At start-up the script prints `EBM reachable in all N workers`. If any worker cannot reach the Python interpreter the run stops, because an EBM row averaged over an unknown subset of repeats would not be comparable with the others.
+
+### 4.4 Environment variables
+
+| Variable | Default | Scripts | Meaning |
+|---|---|---|---|
+| `BRCM_NSIM` | 1000 | simulation | replications per factorial scenario |
+| `BRCM_REPEATS` | 10 | benchmark | cross-validation repeats per dataset |
+| `BRCM_FOLDS` | 5 | benchmark | outer folds |
+| `BRCM_CORES` | all cores minus one | both | parallel workers |
+| `BRCM_OUT` | `BRCMsim` / `BRCMreal` | both | output folder |
+| `BRCM_SEED` | 1000 / 2000 | both | base random seed |
+| `BRCM_AUTORUN` | TRUE | both | FALSE loads the functions without running anything |
+| `BRCM_STRICT` | TRUE | both | stop if a required package, or EBM, is unavailable; FALSE allows an exploratory run without them |
+| `BRCM_PROGRESS` | 20 | both | progress lines per scenario or dataset |
+| `BRCM_OOFK` | 3 | both | inner folds for the out-of-fold interaction evidence |
+| `BRCM_R2THRESH` | 0.01 | both | evidence threshold for admitting an interaction surface |
+| `BRCM_LLTHRESH` | 0.002 | simulation | threshold for the alternative log-loss selection criterion |
+| `BRCM_PYTHON` | none | benchmark | path to the Python interpreter for EBM |
+
+The reported results use the defaults, with the numbers of workers given in Section 5.
+
+## 5. Running time
+
+All times refer to the machine used for the reported runs.
+
+| Stage | Workers | Time |
+|---|---|---|
+| Factorial study | 12 for the first 183 scenarios, 28 for the remaining 33 | about 56 h for the first 183 scenarios; the total was not recorded |
+| Screening analysis (`KOSUM_HIGHDIM.R`) | sequential | about 32 h |
+| Sensitivity analysis | sequential | not recorded separately |
+| Benchmark study | 10 | about 20 to 40 min |
+
+Cost in the factorial study is dominated by the p = 20 scenarios: with 12 workers a scenario took about 7 min at p = 4 but roughly 30 to 60 min at p = 20. The screening and sensitivity analyses run their replications one after another, so adding workers does not shorten them; the p = 50 cells account for about 80% of the running time of the screening analysis.
+
+**Interruptions.** The factorial and benchmark studies write a checkpoint after every scenario and every dataset. If a run stops, sourcing the script again with the same `BRCM_OUT` resumes from the last completed unit and loses at most the one in progress. A manifest stored with the checkpoints records the settings of the run, and a resumed run stops if they differ, so results computed under different settings cannot be mixed. The screening analysis has no checkpoints and must run to completion.
+
+For runs of this length, disable sleep mode and keep the output folder on a local disk rather than a cloud-synchronized one. One of the runs behind this repository was interrupted while its output folder was on a synchronized drive, and was resumed from its checkpoints.
+
+## 6. Output files and where they appear in the paper
+
+The file names inside the output folders predate the final numbering of the paper, which is why, for example, Figure 4 of the paper is the file `F3_HL_forest_AUC.png`.
+
+Axis labels follow the typographic convention of the journal: negative numbers are set with a minus sign (U+2212) rather than a hyphen, through the helper `axis_minus()` defined in both scripts. The figures published with the paper are exactly the files written by `write_figures()` and `write_figures_rd()`; no separate figure script is used.
+
+**Redrawing the figures without repeating the analyses.** Both figure writers work from the saved results, refitting only the single models behind the component-function figures, so the complete set can be redrawn in a few minutes:
+
+```r
+Sys.setenv(BRCM_AUTORUN = "FALSE")
+source("BRCM_simulation.R")
+write_figures(readRDS("BRCMsim/sim.rds"), "BRCMsim")      # Figures 1, 2, 4, 5, 6 and the screening figure
+source("BRCM_realdata.R")
+write_figures_rd(readRDS("BRCMreal/realdata.rds"), "BRCMreal")   # Figures 7, 8, 9 and Figure S1
+```
+
+### 6.1 Simulation (`BRCMsim/`)
+
+| Paper | File |
+|---|---|
+| Table 4 | `tables/T1_overall.csv` |
+| Tables 5, 6, 12 | `tables/DATA_summary.csv` (per-scenario means, averaged as described in each table note) |
+| Tables 7, 11 | `tables/T_diagnostics.csv` |
+| Table 9 | `tables/DATA_paired_scenario.csv` |
+| Table 10 | `tables/T_paired_summary.csv` |
+| Table 13 | `tables/T_runtime.csv` |
+| Table 14 | `tables/T_interaction_diagnostics.csv` (full grid; the paper shows selected rows) and `03_sensitivity.rds` |
+| Figure 1 | `figures/F1_AUC_by_n.png` |
+| Figure 2 | `figures/F2_LogLoss_by_DGP.png` |
+| Figure 4 | `figures/F3_HL_forest_AUC.png` |
+| Figure 5 | `figures/F4_component_functions.png` |
+| Figure 6 | `figures/F5_interaction_surface.png` |
+| Tables S1 to S24 | `tables/T02_detail_*.csv` to `tables/T25_detail_*.csv` (the 72 scenarios at p = 4) |
+| Table S30 | `tables/DATA_paired_scenario.csv` |
+| Table S31 | `tables/T_diagnostics.csv` |
+| not in the paper | `tables/T26_detail_*.csv` to `tables/T73_detail_*.csv`, the same detail for p = 10 and p = 20 |
+| everything above | `01_factorial.rds`, the replication-level results (see Section 7) |
+| — | `Paper_Tables.xlsx`, an Excel copy of the tables; `sessionInfo.txt` |
+
+### 6.2 Screening analysis (`highdim/`)
+
+| Paper | File |
+|---|---|
+| Table 8 | `T_highdim_screening_final.csv` |
+| Figure 3 | `F3_screening_by_dimension.png` |
+| — | `02_highdim_final.rds`, `sessionInfo_highdim_final.txt` |
+
+### 6.3 Benchmark (`BRCMreal/`)
+
+| Paper | File |
+|---|---|
+| Table 3 | `tables/RT0_datasets.csv` |
+| Table 15 | `tables/RT_overall.csv` |
+| Table 16 | computed from `realdata.rds`; see below |
+| Tables 17, 18 | `tables/RD_paired.csv` |
+| Table 19 | `tables/RD_diagnostics.csv` |
+| Table 20 | `tables/RD_interaction_summary.csv` (per fold: `tables/RD_interaction_by_fold.csv`) |
+| Figure 7 | `figures/RF_AUC_by_dataset.png` |
+| Figure 8 | `figures/RF_LogLoss_by_dataset.png` |
+| Figure 9 | `figures/RF_pima_components.png` |
+| Figure S1 | `figures/RF_HL_forest_AUC.png` |
+| Tables S25 to S29 | `tables/RT1_PimaIndiansDiabetes.csv` to `tables/RT5_HouseVotes84.csv` |
+| — | `realdata.rds` (all repeat-level results), one `.rds` per dataset, `RealData_Tables.xlsx` |
+
+Table 16 restricts the comparison to the four datasets completed by every method shown, excluding Ionosphere, and omits ordinary logistic regression, which fails on two of those four. It is computed from the saved results:
+
+```r
+z  <- readRDS("BRCMreal/realdata.rds")
+ds <- c("PimaIndiansDiabetes", "BreastCancer", "Sonar", "HouseVotes84")
+ms <- setdiff(names(z$raw[[ds[1]]]), "LR")
+m  <- function(k) sapply(ms, function(mm)
+        mean(sapply(ds, function(d) mean(z$raw[[d]][[mm]][, k], na.rm = TRUE))))
+tab <- data.frame(AUC = 100 * m("Test_AUC"), Brier = m("Test_Brier"), LogLoss = m("Test_LogLoss"))
+round(tab[order(-tab$AUC), ], 4)
+```
+
+## 7. Large files
+
+`01_factorial.rds` (435 MB) holds the replication-level results of the factorial study for all 18 methods and exceeds GitHub's file-size limit. It will be deposited at Zenodo and linked from this page; until then it is available from the author on request. Every table in `BRCMsim/tables/` is derived from it and is included here directly.
+
+The per-scenario checkpoint files in `BRCMsim/_checkpoints/` are not included; they duplicate `01_factorial.rds`.
+
+## 8. Known issues
+
+### 8.1 A worker process can terminate on one configuration
+
+In the factorial study, one configuration repeatedly terminated a parallel worker process outright rather than raising an R error: twenty predictors, n = 100 and prevalence 0.50. After the 70/30 split this leaves about 70 training observations for 20 predictors. In the order in which the script visits the scenarios, the cases were:
+
+| Scenario | Name | What happened |
+|---|---|---|
+| 147 of 216 | `logit_mixed_p20_n100_p50` | terminated a worker in an early run, which then stopped |
+| 183 of 216 | `logit_interact_p20_n100_p50` | terminated a worker in an early run, which then stopped |
+| 192 of 216 | `logit_pure_int_p20_n100_p50` | in the reported run, 2 of 1000 replications could not be completed |
+
+When this happens the master process reports `error reading from connection` or `error writing to connection`. Early versions of the script stopped the whole run at that point. The released version contains the failure instead: it rebuilds the cluster, reruns the affected chunk one replication at a time, and skips any replication that still terminates a worker when run on its own. A skipped replication is recorded rather than silently dropped. In the reported run this happened only in scenario 192, which therefore rests on **998 replications for every method**: `tables/T_diagnostics.csv` shows `Attempted = 998` for that scenario, and the paper states the exception in Sections 2 and 3.4. Every other scenario rests on 1000 replications.
+
+The failure was not traced to a particular comparator. It is most likely a crash in the compiled code of one of the comparator libraries on a very small training partition. `brcm_diagnose()` in `BRCM_simulation.R` fits each method in a separate worker and can be used to isolate it.
+
+Because every replication draws its data from its own fixed seed, rebuilding the cluster and rerunning a chunk reproduces exactly the values an uninterrupted run would have produced; only the skipped replications are absent.
+
+At the end of a run in which the cluster was rebuilt, R prints warnings of the form `closing unused connection` (in a Turkish locale, `kullanılmayan bağlantı kapatılıyor`). They come from the discarded cluster and do not affect the results.
+
+### 8.2 Other messages
+
+`wilcox.test` may warn `requested conf.level not achievable`. This happens when nearly all paired differences between two methods are zero, typically when B-RCM++ and its interaction-free ablation make identical predictions; the estimate and the p-value are still returned, and the interval is slightly narrower than nominal.
+
+Ordinary logistic regression fails in many replications at n = 100, particularly with twenty predictors, because the data are separable. These fits are recorded as failures in the diagnostics, not dropped.
+
+CatBoost creates a `catboost_info/` folder in the working directory. It is not part of the output and can be deleted.
+
+## 9. A correction made during review
+
+The dedicated screening analysis was first run with a count of family-wise false selection that treated a fit as a false selection whenever any interaction surface was admitted. Under the null process that is the correct quantity, because every admitted surface is false; on the two interaction processes it is not, because recovering the generating pair also counts. The count was corrected to record only fits that admit at least one surface other than the generating pair, the mean number of false surfaces is now counted directly, and the screening analysis was rerun in full with `KOSUM_HIGHDIM.R`, extended at the same time from p = 10 and 20 to p = 10, 20 and 50. Table 8 and Figure 3 report the corrected run. The factorial study was not affected by the error and was not rerun.
+
+## 10. Citation, licence and contact
+
+If you use this code, please cite the paper:
+
 ```bibtex
-@software{brcmplusplus\_code,
-  author    = {Baydili, K{\\"u}r{\\c s}ad Nuri},
-  title     = {Replication code for B-RCM++: A Rank-Based Bernstein Additive
-               Logistic Model with Spearman-Informed Regularization},
-  year      = {2026},
-  publisher = {Zenodo},
-  doi       = {\[ZENODO DOI]}
+@unpublished{Baydili2026BRCM,
+  author = {Baydili, K{\"u}r{\c{s}}ad Nuri},
+  title  = {A Rank-Based Bernstein Additive Logistic Model with Spearman-Informed
+            Regularization for Interpretable Binary Classification},
+  note   = {Manuscript submitted to Mathematics (MDPI)},
+  year   = {2026}
 }
 ```
-The accompanying manuscript is under review and not yet published. Until it appears, it may be referred to as:
-```bibtex
-@unpublished{brcmplusplus\_manuscript,
-  author = {Baydili, K{\\"u}r{\\c s}ad Nuri},
-  title  = {A Rank-Based Bernstein Additive Logistic Model with
-            Spearman-Informed Regularization for Interpretable
-            Binary Classification},
-  year   = {2026},
-  note   = {Manuscript submitted for publication}
-}
-```
----
 
-Contact
-Kürşad Nuri Baydili — kursadnuri.baydili@sbu.edu.tr or knuribaydili@hotmail.com
-Department of Biostatistics and Medical Informatics, Hamidiye Faculty of Medicine, University of Health Sciences Turkey, Istanbul, Türkiye
-https://orcid.org/0000-0002-2785-0406
+**Licence.** The code and the output files in this repository are released under the MIT licence; see `LICENSE`.
+
+**Use of generative AI.** Generative AI assistants were used to revise and debug the code, which was originally written by the author; see Section 2.7 of the paper.
+
+**Contact.** Kürşad Nuri Baydili, Department of Biostatistics and Medical Informatics, Hamidiye Faculty of Medicine, University of Health Sciences Turkey, Istanbul, Türkiye. kursadnuri.baydili@sbu.edu.tr · ORCID [0000-0002-2785-0406](https://orcid.org/0000-0002-2785-0406)
+
